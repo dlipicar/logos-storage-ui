@@ -16,9 +16,6 @@ class StorageBackend
     PROP(QString defaultConfigJson READONLY)
     PROP(QString uiVersion READONLY)
 
-    // Mix configuration as read from the mix-config.json file at build time.
-    PROP(QString mixConfigJson READONLY)
-
     // AutoNAT reachability reported by the node: "Reachable", "NotReachable"
     // or "Unknown" while AutoNAT has no verdict yet.
     PROP(QString natReachability READONLY)
@@ -50,6 +47,9 @@ class StorageBackend
     SLOT(void loadUserConfig())
     SLOT(QString getUserConfig())
     SLOT(void reloadIfChanged(QString configJson))
+
+    // Update the config after a network change.
+    SLOT(QString refreshConfig(QString configJson))
     SLOT(QString configJson())
 
     // Onboarding
