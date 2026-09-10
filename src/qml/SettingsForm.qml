@@ -291,8 +291,10 @@ ScrollView {
     function applyMix(text) {
         const cfg = root.asJson(text, {})
 
-        root.vMixProxies = root.toJsonText(cfg["dht-mix-proxy"])
-        root.vMixPool = cfg["mix-pool-json"] || ""
+        if (cfg["dht-mix-proxy"] !== undefined)
+            root.vMixProxies = root.toJsonText(cfg["dht-mix-proxy"])
+        if (cfg["mix-pool-json"] !== undefined)
+            root.vMixPool = cfg["mix-pool-json"]
     }
 
     function needsRestart(before, after) {
