@@ -148,6 +148,9 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
 
+    // Run the persisted config.json through the module and rewrite it.
+    void refreshUserConfigFile();
+
     // Display debug (or message) in the terminal and
     // add it to the debugLogs to make it accessible
     // from the debug panel.

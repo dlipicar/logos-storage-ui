@@ -376,6 +376,8 @@ void StorageBackend::start() {
     // AutoNAT has no verdict until the node has run for a while.
     setNatReachability("Unknown");
 
+    refreshUserConfigFile();
+
     QFile file(USER_CONFIG_PATH);
 
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -811,6 +813,26 @@ QString StorageBackend::refreshConfig(QString configJsonStr) {
     return result.getString();
 }
 
+void StorageBackend::refreshUserConfigFile() {
+    QFile file(USER_CONFIG_PATH);
+    if (!file.exists() || !file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return;
+    }
+    const QByteArray current = file.readAll();
+    file.close();
+
+    const QJsonDocument refreshed =
+        QJsonDocument::fromJson(refreshConfig(QString::fromUtf8(current)).toUtf8());
+
+    // Compare parsed: the module returns compact json, the file is indented.
+    if (refreshed.isNull() || refreshed == QJsonDocument::fromJson(current)) {
+        return;
+    }
+
+    saveUserConfig(QString::fromUtf8(refreshed.toJson(QJsonDocument::Indented)));
+    debug("Updated the user config from the module.");
+}
+
 bool StorageBackend::togglePrivateQueries(bool enabled) {
     qDebug() << "StorageBackend::togglePrivateQueries called with" << enabled;
 
@@ -830,6 +852,8 @@ void StorageBackend::fetchWidgetsData() {
 
 void StorageBackend::loadUserConfig() {
     qDebug() << "StorageBackend::loadUserConfig called.";
+
+    refreshUserConfigFile();
 
     QFile file(USER_CONFIG_PATH);
 
