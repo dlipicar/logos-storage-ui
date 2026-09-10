@@ -275,8 +275,21 @@ ScrollView {
         if (!root.backend)
             return
 
-        const cfg = root.asJson(root.backend.refreshConfig(
-            JSON.stringify({ "network": network, "mix-enabled": root.vMixEnabled })), {})
+        const request = JSON.stringify({ "network": network, "mix-enabled": root.vMixEnabled })
+
+        if (root.backend.isMock) {
+            root.applyMix(root.backend.refreshConfig(request))
+        } else if (typeof logos !== "undefined" && logos) {
+            logos.watch(root.backend.refreshConfig(request), function (text) {
+                root.applyMix(text)
+            }, function (err) {
+                console.warn("refreshConfig:", err)
+            })
+        }
+    }
+
+    function applyMix(text) {
+        const cfg = root.asJson(text, {})
 
         root.vMixProxies = root.toJsonText(cfg["dht-mix-proxy"])
         root.vMixPool = cfg["mix-pool-json"] || ""
