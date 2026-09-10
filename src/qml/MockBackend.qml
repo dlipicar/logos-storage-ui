@@ -11,19 +11,20 @@ QtObject {
     property string uiVersion: "0.0.0"
     function refreshConfig(configJson) {
         const cfg = JSON.parse(configJson)
+        cfg["config-version"] = 2
+        if (!cfg["mix-enabled"])
+            return JSON.stringify(cfg)
         cfg["dht-mix-proxy"] = ["spr:mock-" + (cfg["network"] || "logos.test")]
         cfg["mix-pool-json"] = "{\"version\":1,\"relays\":[]}"
         return JSON.stringify(cfg)
     }
 
     property string defaultConfigJson: JSON.stringify({
-                                                          "config-version": 2,
                                                           "data-dir": "/home/user/.logos_storage/data",
                                                           "listen-port": 8500,
                                                           "disc-port": 9090,
-                                                          "mix-enabled": true,
-                                                          "dht-mix-proxy": ["spr:mock"],
-                                                          "mix-pool-json": "{\"version\":1,\"relays\":[]}"
+                                                          "nat-schedule-interval": "60s",
+                                                          "mix-enabled": true
                                                       })
 
     signal ready

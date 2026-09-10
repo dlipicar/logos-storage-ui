@@ -708,8 +708,6 @@ void StorageBackend::refreshSpace() {
 }
 
 void StorageBackend::reloadIfChanged(QString configJsonStr) {
-    configJsonStr = refreshConfig(configJsonStr);
-
     QJsonDocument config = QJsonDocument::fromJson(configJsonStr.toUtf8());
     if (config.isNull()) {
         debug("Invalid json detected !");
@@ -742,7 +740,6 @@ void StorageBackend::reloadIfChanged(QString configJsonStr) {
 
     init(configJsonStr);
 
-    m_config = config;
     saveUserConfig(configJsonStr);
     setStatus(Stopped);
 }
