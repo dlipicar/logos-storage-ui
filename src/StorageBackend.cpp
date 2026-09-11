@@ -800,8 +800,6 @@ QJsonDocument StorageBackend::defaultConfig() {
     return QJsonDocument(obj);
 }
 
-// On failure the config is passed through untouched: an old node that cannot
-// refresh is better than no node.
 QString StorageBackend::refreshConfig(QString configJsonStr) {
     const LogosResult result = m_logos->storage_module.refreshConfig(configJsonStr);
 
