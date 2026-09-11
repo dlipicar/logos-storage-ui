@@ -275,7 +275,11 @@ ScrollView {
         if (!root.backend)
             return
 
-        const request = JSON.stringify({ "network": network, "mix-enabled": root.vMixEnabled })
+        const request = JSON.stringify({
+                                           "network": network,
+                                           "mix-enabled": root.vMixEnabled,
+                                           "bootstrap-node": root.asJson(root.vBootstrap, [])
+                                       })
 
         if (root.backend.isMock) {
             root.applyMix(root.backend.refreshConfig(request))

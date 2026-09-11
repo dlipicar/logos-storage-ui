@@ -179,7 +179,10 @@ void StorageBackend::init(QString configJson) {
         return;
     }
 
+    // Defensive here: the config-version should be
+    // removed by the Storage Module already.
     QJsonObject moduleConfig = m_config.object();
+    moduleConfig.remove("config-version");
 
     const QString dataDir = moduleConfig.value("data-dir").toString();
     if (!dataDir.isEmpty()) {

@@ -52,6 +52,7 @@ sections:
     steps:
       - title: "Reset state and write the legacy config"
         run: |
+          set -e
           # Fresh data dir for this run.
           rm -rf /tmp/storage-ui-config-data
           mkdir -p /tmp/storage-ui-config-data
@@ -173,6 +174,7 @@ sections:
     steps:
       - title: "Snapshot the refreshed config"
         run: |
+          set -e
           sha256sum "$HOME/.logos_storage/config.json" | awk '{print $1}' \
             > /tmp/storage-ui-config-hash
           echo "snapshot: $(cat /tmp/storage-ui-config-hash)"
