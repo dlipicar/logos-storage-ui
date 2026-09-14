@@ -166,6 +166,14 @@ file no longer matches the data available in `logos-storage-nim`.
 
 The build is driven by `flake.nix` and `metadata.json`, using `mkLogosQmlModule` from `logos-module-builder`. The previous layout with a separate `nix/` directory (`default.nix`, `lib.nix`, `app.nix`) has been replaced by that template.
 
+### Plugin structure
+
+This module is a generated view plugin (`"type": "ui_qml"` and `"interface": "universal"` in `metadata.json`). Only two parts are written by hand:
+- `src/StorageBackend.rep`: the view contract remoted to QML.
+- `src/StorageBackend.{h,cpp}`: a `StorageBackendSimpleSource` that also derives `LogosUiPluginContext`.
+
+The plugin entry point (`StorageUiPlugin`, its `Q_PLUGIN_METADATA` and the `initLogos` wiring) is generated into `generated_code/` by `logos-qt-generator` from the `codegen` block in `metadata.json`. Do not add it to `SOURCES`. The backend reaches `storage_module` through `LogosUiPluginContext::modules()`, available once `onContextReady()` fires.
+
 ## Requirements
 
 ### Build Tools
