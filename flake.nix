@@ -1,7 +1,7 @@
 {
   description = "Storage UI plugin for the Logos application";
 
-  # Pull pre-built artifacts from the self-hosted Logos Attic cache(Nix binary cache).
+  # Logos binary cache.
   nixConfig = {
     extra-substituters = [ "https://cache.nix.logos.co/public" ];
     extra-trusted-public-keys = [ "public:l4HrXgL4nw246+LBh2SOJyhz64BoGegOYLheT/iIAPU=" ];

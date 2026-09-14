@@ -54,10 +54,7 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     explicit StorageBackend(QObject* parent = nullptr);
     ~StorageBackend();
 
-    // Fires once the generated plugin glue has wired modules(); the typed
-    // storage_module surface is live from here on. Nothing is called on the
-    // module yet — the QML view drives init()/start() — so this only builds
-    // the typed-dependency handle the slots below use.
+    // Called once modules() is ready.
     void onContextReady() override;
 
   public slots:
@@ -160,14 +157,8 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     QString configJson() override;
 
   protected:
-    // Fired when the host is about to tear this view down -- after the view's
-    // event loop has returned, before the plugin is destroyed. Answers
-    // Asynchronous while the node is Running, so the host keeps its loop
-    // turning until stopCompleted lands and we call unloadFinished().
-    //
-    // Protected, and deliberately not a slot: this is framework plumbing, never
-    // remoted, and no QML caller can reach it. The grace period belongs to the
-    // host (2000ms in ui-host, 3000ms in logos_host) rather than to this file.
+    // Stop the node before unload. Asynchronous while Running: the host waits
+    // for unloadFinished().
     LogosShutdown aboutToUnload() override;
 
   private:
@@ -207,15 +198,8 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Emit error(message)
     void reportError(const QString& message);
 
-    // Typed access to the declared dependencies (storage_module). Owned by the
-    // backend rather than aliasing LogosUiPluginContext::modules() — see
-    // onContextReady() in the .cpp for why the destructor needs it to outlive
-    // the generated plugin's own aggregate.
     LogosModules* m_logos;
-    // "stop requested" and "teardown finished" are different states: the host
-    // may return from its grace period with the stop still in flight, and the
-    // destructor must then neither ask for a second stop nor wait out another
-    // full timeout on top of one the host has already exceeded.
+    // A stop can still be in flight after the host grace period.
     bool m_stopRequested = false;
     bool m_teardownDone = false;
 

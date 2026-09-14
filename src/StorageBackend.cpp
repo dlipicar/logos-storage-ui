@@ -41,28 +41,12 @@ StorageBackend::StorageBackend(QObject* parent)
 }
 
 void StorageBackend::onContextReady() {
-    // The framework has wired modules(), so the typed storage_module surface is
-    // live. We build our own LogosModules over the same LogosAPI instead of
-    // aliasing &modules(): the generated plugin declares its LogosModules AFTER
-    // the backend, so it is destroyed FIRST, while ~StorageBackend below still
-    // has to reach storage_module to stop/destroy the node. Constructing it here
-    // is what this backend did before it became a generated view plugin; the
-    // LpBridge behind the typed wrapper is a process-wide cache keyed by
-    // (origin, target), so this is the same connection, not a second one.
+    // ~StorageBackend still calls storage_module after modules() is destroyed.
     m_logos = new LogosModules(modules().api);
 }
 
 LogosShutdown StorageBackend::aboutToUnload()
 {
-    // The teardown that used to run in ~StorageBackend (and, before this module
-    // became a generated view plugin, in the hand-written StorageUIPlugin
-    // destructor). It belongs here: the host calls this after the view's event
-    // loop has returned and before the plugin is destroyed, and it -- not this
-    // file -- owns the deadline.
-    //
-    // Same branching as before: Destroyed -> nothing to do; not Running ->
-    // destroy() inline; Running -> queued stop, and the host waits for
-    // unloadFinished().
     if (!m_logos) {
         m_teardownDone = true;
         return LogosShutdown::Synchronous;
@@ -86,9 +70,7 @@ LogosShutdown StorageBackend::aboutToUnload()
     qDebug() << "StorageBackend: stopping backend before destroy";
     m_stopRequested = true;
 
-    // Queued on purpose: the stop and the completion are both delivered by the
-    // event loop the HOST is about to run, which is what makes this
-    // non-blocking rather than the nested loop it replaces.
+    // Queued: the host's event loop delivers the stop, so this does not block.
     QObject::connect(this, &StorageBackend::stopCompleted, this, [this]() {
         if (m_teardownDone)
             return;
@@ -103,16 +85,12 @@ LogosShutdown StorageBackend::aboutToUnload()
 
 StorageBackend::~StorageBackend()
 {
-    // Normal path: the host called aboutToUnload() and everything is already
-    // done. Nothing here should block -- that is the whole point of the hook.
     if (m_teardownDone) {
         m_logos = nullptr;
         return;
     }
 
-    // The host asked, we answered Asynchronous, and its grace period elapsed
-    // before stopCompleted arrived. It has already warned; waiting again here
-    // would only extend a teardown that is already over the host's budget.
+    // The host grace period elapsed before stopCompleted: do not wait again.
     if (m_stopRequested) {
         qWarning() << "StorageBackend: stop still pending at destruction";
         if (m_logos)
@@ -121,9 +99,7 @@ StorageBackend::~StorageBackend()
         return;
     }
 
-    // FALLBACK: nothing drove the hook -- a backend constructed outside the
-    // generated glue, as unit tests do. Block exactly as this destructor used
-    // to, so those paths keep the graceful stop instead of losing it silently.
+    // aboutToUnload() was never called (e.g. unit tests): block until stopped.
     if (m_logos) {
         const StorageStatus s = status();
 
