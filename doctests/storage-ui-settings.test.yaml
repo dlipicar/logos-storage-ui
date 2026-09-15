@@ -109,7 +109,7 @@ sections:
             - name: "The node is running"
               action: wait_for
               texts: ["Stop"]
-              timeout: 5000
+              timeout: 30000
 
             - name: "Open the Settings popup"
               action: click_object

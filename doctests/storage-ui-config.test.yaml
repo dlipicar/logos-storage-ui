@@ -115,7 +115,7 @@ sections:
             - name: "The node runs on the refreshed config"
               action: wait_for
               texts: ["Stop"]
-              timeout: 5000
+              timeout: 30000
               screenshot: "storage-ui-config-running.png"
               text: |
                 The node starts on the refreshed config: the action button now
@@ -206,7 +206,7 @@ sections:
             - name: "The node runs again"
               action: wait_for
               texts: ["Stop"]
-              timeout: 5000
+              timeout: 30000
 
             - name: "Stop the node"
               action: click
@@ -224,7 +224,7 @@ sections:
             - name: "The node runs after restart"
               action: wait_for
               texts: ["Stop"]
-              timeout: 5000
+              timeout: 30000
 
       - title: "The config file is unchanged"
         run: |

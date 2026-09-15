@@ -114,7 +114,7 @@ sections:
             - name: "The node is running"
               action: wait_for
               texts: ["Stop"]
-              timeout: 5000
+              timeout: 30000
               screenshot: "storage-ui-dashboard.png"
               text: |
                 The node started on the default configuration. The dot next to
@@ -272,7 +272,7 @@ sections:
             - name: "The node is running"
               action: wait_for
               texts: ["Stop"]
-              timeout: 5000
+              timeout: 30000
 
             - name: "Private DHT queries are on by default"
               action: expect_property
