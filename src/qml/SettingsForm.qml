@@ -287,6 +287,8 @@ ScrollView {
                 root.applyMix(text)
             }, function (err) {
                 console.warn("migrateConfig:", err)
+                // Put the previous network back in the selector
+                networkSelect.currentIndex = networkSelect.model.indexOf(networkSelect.value)
             })
         }
     }
@@ -649,6 +651,7 @@ ScrollView {
                                  : "The network preset the node bootstraps from."
 
                     SSelect {
+                        id: networkSelect
                         objectName: "networkSelect"
                         enabled: !root.hasCustomBootstrap
                         model: root.optionsWith(root.networks, root.vNetwork)

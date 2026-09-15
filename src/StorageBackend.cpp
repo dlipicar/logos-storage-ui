@@ -809,8 +809,14 @@ void StorageBackend::refreshUserConfigFile() {
     const QByteArray current = file.readAll();
     file.close();
 
-    const QJsonDocument refreshed =
-        QJsonDocument::fromJson(migrateConfig(QString::fromUtf8(current)).toUtf8());
+    // No toast here: init() migrates the same config right after and reports it.
+    const LogosResult result = m_logos->storage_module.migrateConfig(QString::fromUtf8(current));
+    if (!result.success) {
+        debug("Failed to refresh the user config file: " + result.getError(), "warning");
+        return;
+    }
+
+    const QJsonDocument refreshed = QJsonDocument::fromJson(result.getString().toUtf8());
 
     // Compare parsed: the module returns compact json, the file is indented.
     if (refreshed.isNull() || refreshed == QJsonDocument::fromJson(current)) {
