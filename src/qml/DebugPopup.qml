@@ -118,19 +118,15 @@ Popup {
                     portMapping === "none" ? "neutral" : "success")
         root.addRow("Relay running", root.asText(nat.relayRunning), "tag")
         root.addRow("DHT client mode", root.asText(nat.clientMode), "tag")
-        root.addRow("Routing table",
-                    root.countBy(nodes, "seen") + " verified / " + nodes.length + " known")
+        root.addRow("Routing table", nodes.length + " known")
         root.addRow("Connections",
                     connections.length + " open / " + root.countBy(connections, "direct") + " direct")
-        root.addRow("Storage version", "2.1.3")
+        root.addRow("Storage version", root.backend.moduleVersion)
 
         root.addAll("Listen address", info.addrs)
-        root.addAll("Provider address", info.providerAddresses)
-        root.addAll("Discovery address", info.discoveryAddresses)
 
         // Absent from the payload when the node has no such record or no mix.
-        const identifiers = [["SPR", info.spr], ["Provider record", info.providerRecord],
-                             ["libp2p public key", info.libp2pPubKey],
+        const identifiers = [["SPR", info.spr], ["libp2p public key", info.libp2pPubKey],
                              ["Mix public key", info.mixPubKey]]
         for (let i = 0; i < identifiers.length; i++) {
             const text = root.asText(identifiers[i][1])

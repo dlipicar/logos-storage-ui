@@ -59,7 +59,6 @@ ScrollView {
     // The byte count as read, so an untouched quota is written back unrounded.
     property var loadedQuota: undefined
     property string vListenPort: ""
-    property string vDiscPort: ""
     property string vNatMode: "auto"
     property string vNatExtIp: ""
     property string vNatInterval: ""
@@ -76,8 +75,7 @@ ScrollView {
 
     readonly property var logLevels: ["TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR", "FATAL"]
     readonly property var natModes: ["auto", "extip"]
-    readonly property var mixConfig: root.backend ? root.asJson(root.backend.mixConfigJson, {}) : ({})
-    readonly property var networks: Object.keys(root.mixConfig)
+    readonly property var networks: ["logos.test", "logos.dev"]
 
     // A config can hold a value no preset lists. Offering it keeps it visible
     // and keeps a save that touches another field from dropping it.
@@ -126,7 +124,7 @@ ScrollView {
                                                && root.vBootstrap.trim() !== "[]"
 
     // Keys the node only reads when it starts.
-    readonly property var restartKeys: ["storage-quota", "listen-port", "disc-port", "nat",
+    readonly property var restartKeys: ["storage-quota", "listen-port", "nat",
                                         "network", "bootstrap-node", "dht-mix-proxy",
                                         "mix-pool-json", "nat-schedule-interval"]
 
@@ -179,7 +177,6 @@ ScrollView {
         root.loadedQuota = cfg["storage-quota"]
         root.vQuotaGiB = root.bytesToGiB(cfg["storage-quota"])
         root.vListenPort = cfg["listen-port"] !== undefined ? String(cfg["listen-port"]) : ""
-        root.vDiscPort = cfg["disc-port"] !== undefined ? String(cfg["disc-port"]) : ""
         root.vNetwork = cfg["network"] || ""
         root.vNatInterval = cfg["nat-schedule-interval"] || ""
         root.vBootstrap = root.toJsonText(cfg["bootstrap-node"])
@@ -265,20 +262,44 @@ ScrollView {
         putJson("dht-mix-proxy", root.vMixProxies)
         put("mix-pool-json", root.vMixPool)
         putInt("listen-port", root.vListenPort)
-        putInt("disc-port", root.vDiscPort)
 
         return cfg
     }
 
-    // The Mix relays are not part of the module's network preset, so switching
-    // network has to move them too: dev relays on the test network reach nothing.
     function pickNetwork(network) {
-        root.vNetwork = network
-        const mix = root.mixConfig[network]
-        if (!mix)
+        if (!root.backend) {
+            root.vNetwork = network
             return
-        root.vMixProxies = root.toJsonText(mix["dht-mix-proxy"])
-        root.vMixPool = mix["mix-pool-json"]
+        }
+
+        const request = JSON.stringify({
+                                           "network": network,
+                                           "mix-enabled": root.vMixEnabled,
+                                           "bootstrap-node": root.asJson(root.vBootstrap, [])
+                                       })
+
+        if (root.backend.isMock) {
+            root.vNetwork = network
+            root.applyMix(root.backend.migrateConfig(request))
+        } else if (typeof logos !== "undefined" && logos) {
+            logos.watch(root.backend.migrateConfig(request), function (text) {
+                root.vNetwork = network
+                root.applyMix(text)
+            }, function (err) {
+                console.warn("migrateConfig:", err)
+                // Put the previous network back in the selector
+                networkSelect.currentIndex = networkSelect.model.indexOf(networkSelect.value)
+            })
+        }
+    }
+
+    function applyMix(text) {
+        const cfg = root.asJson(text, {})
+
+        if (cfg["dht-mix-proxy"] !== undefined)
+            root.vMixProxies = root.toJsonText(cfg["dht-mix-proxy"])
+        if (cfg["mix-pool-json"] !== undefined)
+            root.vMixPool = cfg["mix-pool-json"]
     }
 
     function needsRestart(before, after) {
@@ -578,22 +599,6 @@ ScrollView {
                     }
                 }
 
-                SettingRow {
-                    title: "Discovery port"
-                    description: "UDP port used by the discovery layer."
-
-                    SField {
-                        objectName: "discPortField"
-                        text: root.vDiscPort
-                        placeholderText: "9090"
-                        validator: IntValidator {
-                            bottom: 0
-                            top: 65535
-                        }
-                        onTextChanged: root.vDiscPort = text
-                    }
-                }
-
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: Theme.spacing.small
@@ -646,6 +651,7 @@ ScrollView {
                                  : "The network preset the node bootstraps from."
 
                     SSelect {
+                        id: networkSelect
                         objectName: "networkSelect"
                         enabled: !root.hasCustomBootstrap
                         model: root.optionsWith(root.networks, root.vNetwork)

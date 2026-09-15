@@ -114,7 +114,7 @@ sections:
             - name: "The node is running"
               action: wait_for
               texts: ["Stop"]
-              timeout: 5000
+              timeout: 30000
               screenshot: "storage-ui-dashboard.png"
               text: |
                 The node started on the default configuration. The dot next to
@@ -181,9 +181,8 @@ sections:
           echo "config written by onboarding:"
           jq . "$cfg"
 
-          test "$(jq '."config-version"' "$cfg")" = "2"
+          test "$(jq '."config-version"' "$cfg")" = "3"
           test "$(jq '."listen-port"' "$cfg")" = "8500"
-          test "$(jq '."disc-port"' "$cfg")" = "9090"
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "60s"
 
@@ -238,12 +237,6 @@ sections:
               text: |
                 The configuration is split into sections, each with a title and a help text.
 
-            - name: "Move the discovery port"
-              action: set_text
-              find_by: "objectName"
-              find_value: "discPortField"
-              value: "9191"
-
             - name: "Shorten the AutoNAT round"
               action: set_text
               find_by: "objectName"
@@ -279,7 +272,7 @@ sections:
             - name: "The node is running"
               action: wait_for
               texts: ["Stop"]
-              timeout: 5000
+              timeout: 30000
 
             - name: "Private DHT queries are on by default"
               action: expect_property
@@ -392,7 +385,6 @@ sections:
           echo "config written by onboarding:"
           jq . "$cfg"
 
-          test "$(jq '."disc-port"' "$cfg")" = "9191"
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "30s"
 
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"

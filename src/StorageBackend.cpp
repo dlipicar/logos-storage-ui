@@ -1,5 +1,4 @@
 #include "StorageBackend.h"
-#include "MixConfig.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -34,7 +33,6 @@ StorageBackend::StorageBackend(QObject* parent)
     setNatReachability("Unknown");
     setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
     setUiVersion(STORAGE_UI_VERSION);
-    setMixConfigJson(QString::fromUtf8(MIX_CONFIG_JSON));
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
     QNetworkProxyFactory::setUseSystemConfiguration(false);
@@ -43,6 +41,7 @@ StorageBackend::StorageBackend(QObject* parent)
 void StorageBackend::onContextReady() {
     // ~StorageBackend still calls storage_module after modules() is destroyed.
     m_logos = new LogosModules(modules().api);
+    setModuleVersion(m_logos->storage_module.moduleVersion());
 }
 
 LogosShutdown StorageBackend::aboutToUnload()
@@ -141,16 +140,6 @@ void StorageBackend::reportError(const QString& message) {
     emit error(message);
 }
 
-static int seenPeerCount(const QVariantList& nodes) {
-    int count = 0;
-    for (const QVariant& node : nodes) {
-        if (node.toMap().value("seen").toBool()) {
-            ++count;
-        }
-    }
-    return count;
-}
-
 void StorageBackend::debug(const QString& log, const QString& level) {
     QString current = debugLogs();
     if (!current.isEmpty()) {
@@ -172,6 +161,8 @@ void StorageBackend::debug(const QString& log, const QString& level) {
 void StorageBackend::init(QString configJson) {
     qDebug() << "StorageBackend::initStorage called";
 
+    configJson = migrateConfig(configJson);
+
     m_config = QJsonDocument::fromJson(configJson.toUtf8());
     if (!m_config.isObject()) {
         reportError("Failed to create the storage: invalid JSON config:" + configJson);
@@ -179,6 +170,8 @@ void StorageBackend::init(QString configJson) {
         return;
     }
 
+    // Defensive here: the config-version should be
+    // removed by the Storage Module already.
     QJsonObject moduleConfig = m_config.object();
     moduleConfig.remove("config-version");
 
@@ -377,7 +370,7 @@ void StorageBackend::start() {
     // AutoNAT has no verdict until the node has run for a while.
     setNatReachability("Unknown");
 
-    migrateUserConfigFile();
+    refreshUserConfigFile();
 
     QFile file(USER_CONFIG_PATH);
 
@@ -496,7 +489,7 @@ void StorageBackend::refreshNodeStatus() {
     setNatReachability(reachability.isEmpty() ? QStringLiteral("Unknown") : reachability);
 
     QVariantList nodes = info.value("table").toMap().value("nodes").toList();
-    const int peers = seenPeerCount(nodes);
+    const int peers = nodes.size();
     emit peersUpdated(peers);
 
     debug(QString("Peers: %1, NAT reachability: %2").arg(peers).arg(natReachability()));
@@ -741,7 +734,6 @@ void StorageBackend::reloadIfChanged(QString configJsonStr) {
 
     init(configJsonStr);
 
-    m_config = config;
     saveUserConfig(configJsonStr);
     setStatus(Stopped);
 }
@@ -788,147 +780,51 @@ QJsonDocument StorageBackend::defaultConfig() {
     QJsonDocument doc = QJsonDocument();
     QJsonObject obj = doc.object();
 
-    obj["config-version"] = CURRENT_CONFIG_VERSION;
     obj["data-dir"] = DEFAULT_DATA_DIR;
 
     // Define defaults here to make it visible on the UI
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
-    obj["disc-port"] = DEFAULT_DISC_PORT;
     obj["nat-schedule-interval"] = DEFAULT_NAT_SCHEDULE_INTERVAL;
-
-    const QJsonObject mix = mixConfig(DEFAULT_NETWORK);
     obj["mix-enabled"] = true;
-    obj["dht-mix-proxy"] = mix.value("dht-mix-proxy").toArray();
-    obj["mix-pool-json"] = mix.value("mix-pool-json").toString();
 
     return QJsonDocument(obj);
 }
 
-QJsonObject StorageBackend::mixConfig(const QString& network) {
-    const QJsonObject networks = QJsonDocument::fromJson(QByteArray(MIX_CONFIG_JSON)).object();
-    return networks.value(network).toObject();
-}
-
-// The relays are re-signed regularly, so a set frozen at install time stops
-// reaching anything: a config that follows a preset takes the one we ship.
-QString StorageBackend::syncMixConfig(QString configJsonStr) {
-    QJsonDocument doc = QJsonDocument::fromJson(configJsonStr.toUtf8());
-    if (!doc.isObject()) {
-        return configJsonStr;
-    }
-
-    QJsonObject obj = doc.object();
-    if (!obj.value("bootstrap-node").toArray().isEmpty()) {
-        return configJsonStr;
-    }
-
-    const QJsonObject mix = mixConfig(obj.value("network").toString(DEFAULT_NETWORK));
-    if (mix.isEmpty()) {
-        return configJsonStr;
-    }
-
-    const QJsonArray proxies = mix.value("dht-mix-proxy").toArray();
-    const QString pool = mix.value("mix-pool-json").toString();
-    if (obj.value("dht-mix-proxy").toArray() == proxies
-        && obj.value("mix-pool-json").toString() == pool) {
-        return configJsonStr;
-    }
-
-    obj["dht-mix-proxy"] = proxies;
-    obj["mix-pool-json"] = pool;
-    return QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
-}
-
-bool StorageBackend::isLegacyBootstrap(const QJsonArray& bootstrap) {
-    for (const QJsonValue& node : bootstrap) {
-        if (!LEGACY_BOOTSTRAP_NODES.contains(node.toString())) {
-            return false;
-        }
-    }
-    return true;
-}
-
-QJsonObject StorageBackend::migrateV0toV1(QJsonObject obj) {
-    // A custom bootstrap list means the user joined their own network: keep it,
-    // it intentionally overrides the preset.
-    QJsonArray bootstrap = obj.value("bootstrap-node").toArray();
-    if (!bootstrap.isEmpty() && !isLegacyBootstrap(bootstrap)) {
-        return obj;
-    }
-
-    // Remove legacy bootstrap nodes
-    obj.remove("bootstrap-node");
-    return obj;
-}
-
-QJsonObject StorageBackend::migrateV1toV2(QJsonObject obj) {
-    if (!obj.value("mix-enabled").toBool(false)) {
-        obj["mix-enabled"] = true;
-    }
-    // An absent "network" means the module's default preset, not "no network".
-    const QJsonObject mix = mixConfig(obj.value("network").toString(DEFAULT_NETWORK));
-    if (!mix.isEmpty()) {
-        if (obj.value("dht-mix-proxy").toArray().isEmpty()) {
-            obj["dht-mix-proxy"] = mix.value("dht-mix-proxy").toArray();
-        }
-        if (obj.value("mix-pool-json").toString().isEmpty()) {
-            obj["mix-pool-json"] = mix.value("mix-pool-json").toString();
-        }
-    }
-
-    if (obj.value("nat-schedule-interval").toString().isEmpty()) {
-        obj["nat-schedule-interval"] = DEFAULT_NAT_SCHEDULE_INTERVAL;
-    }
-
-    const QString nat = obj.value("nat").toString();
-    if (!nat.isEmpty() && nat != "auto" && !nat.startsWith("extip:")) {
-        obj.remove("nat");
-    }
-
-    return obj;
-}
-
 QString StorageBackend::migrateConfig(QString configJsonStr) {
-    QJsonDocument doc = QJsonDocument::fromJson(configJsonStr.toUtf8());
-    if (!doc.isObject()) {
+    const LogosResult result = m_logos->storage_module.migrateConfig(configJsonStr);
+
+    if (!result.success) {
+        reportError("Failed to refresh the config: " + result.getError());
         return configJsonStr;
     }
 
-    QJsonObject obj = doc.object();
-    int version = obj.value("config-version").toInt(0);
-
-    if (version >= CURRENT_CONFIG_VERSION) {
-        return configJsonStr;
-    }
-
-    switch (version) {
-    case 0:
-        obj = migrateV0toV1(obj);
-        [[fallthrough]];
-    case 1:
-        obj = migrateV1toV2(obj);
-    }
-
-    obj["config-version"] = CURRENT_CONFIG_VERSION;
-    return QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
+    return result.getString();
 }
 
-void StorageBackend::migrateUserConfigFile() {
+void StorageBackend::refreshUserConfigFile() {
     QFile file(USER_CONFIG_PATH);
     if (!file.exists() || !file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return;
     }
-    QString current = QString::fromUtf8(file.readAll());
+    const QByteArray current = file.readAll();
     file.close();
 
-    QString updated = syncMixConfig(migrateConfig(current));
-    if (updated == current) {
+    // No toast here: init() migrates the same config right after and reports it.
+    const LogosResult result = m_logos->storage_module.migrateConfig(QString::fromUtf8(current));
+    if (!result.success) {
+        debug("Failed to refresh the user config file: " + result.getError(), "warning");
         return;
     }
 
-    saveUserConfig(updated);
-    debug("Updated the user config: schema version "
-          + QString::number(CURRENT_CONFIG_VERSION) + ", preset Mix values.");
+    const QJsonDocument refreshed = QJsonDocument::fromJson(result.getString().toUtf8());
+
+    // Compare parsed: the module returns compact json, the file is indented.
+    if (refreshed.isNull() || refreshed == QJsonDocument::fromJson(current)) {
+        return;
+    }
+
+    saveUserConfig(QString::fromUtf8(refreshed.toJson(QJsonDocument::Indented)));
+    debug("Updated the user config from the module.");
 }
 
 bool StorageBackend::togglePrivateQueries(bool enabled) {
@@ -951,7 +847,7 @@ void StorageBackend::fetchWidgetsData() {
 void StorageBackend::loadUserConfig() {
     qDebug() << "StorageBackend::loadUserConfig called.";
 
-    migrateUserConfigFile();
+    refreshUserConfigFile();
 
     QFile file(USER_CONFIG_PATH);
 

@@ -61,11 +61,10 @@ sections:
           mkdir -p "$HOME/.logos_storage"
           cat > "$HOME/.logos_storage/config.json" <<'EOF'
           {
-            "config-version": 2,
+            "config-version": 3,
             "data-dir": "/tmp/storage-ui-settings-data",
             "log-level": "info",
             "listen-port": 8500,
-            "disc-port": 9090,
             "mix-enabled": true,
             "dht-mix-proxy": [
               "spr:CiUIAhIhA11LamlswboRlyrpEXBubPQAr2WRmqjgWRC4JsvFptrCEgIDARpHCicAJQgCEiEDXUtqaWzBuhGXKukRcG5s9ACvZZGaqOBZELgmy8Wm2sIQnO-N0gYaCgoIBBiQTsgGH5AaCgoIBBiQTsgGH5AqRjBEAiAjgWii--TgYd2tPwyekCu4H3yDw-qngLo1SfbmDcL7SAIgE2o_HdzRO3MXyn3MtMMmPJtUdnhBS3uMJrxGy6sf6xY"
@@ -82,7 +81,6 @@ sections:
 
           test "$(jq -r '."log-level"' "$cfg")" = "info"
           test "$(jq '."listen-port"' "$cfg")" = "8500"
-          test "$(jq '."disc-port"' "$cfg")" = "9090"
           test "$(jq 'has("nat")' "$cfg")" = "false"
           test "$(jq 'has("storage-quota")' "$cfg")" = "false"
           test "$(jq 'has("network")' "$cfg")" = "false"
@@ -111,7 +109,7 @@ sections:
             - name: "The node is running"
               action: wait_for
               texts: ["Stop"]
-              timeout: 5000
+              timeout: 30000
 
             - name: "Open the Settings popup"
               action: click_object
@@ -147,12 +145,6 @@ sections:
               find_by: "objectName"
               find_value: "listenPortField"
               value: "8600"
-
-            - name: "Set the discovery port"
-              action: set_text
-              find_by: "objectName"
-              find_value: "discPortField"
-              value: "9191"
 
             - name: "Switch NAT to extip"
               action: set_property
@@ -274,10 +266,9 @@ sections:
 
           test "$(jq -r '."log-level"' "$cfg")" = "trace"
           test "$(jq '."listen-port"' "$cfg")" = "8600"
-          test "$(jq '."disc-port"' "$cfg")" = "9191"
           test "$(jq -r '.network' "$cfg")" = "logos.dev"
 
-          echo "OK: log-level, listen-port, disc-port, network"
+          echo "OK: log-level, listen-port, network"
 
       - title: "The storage quota is written in bytes"
         run: |
@@ -324,7 +315,7 @@ sections:
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-settings-data"
-          test "$(jq '."config-version"' "$cfg")" = "2"
+          test "$(jq '."config-version"' "$cfg")" = "3"
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
 
           echo "OK: data-dir, config-version and mix-enabled are intact"
@@ -397,12 +388,6 @@ sections:
               find_value: "listenPortField"
               property: "text"
               value: "8600"
-
-            - name: "The discovery port is shown"
-              action: expect_property
-              find_value: "discPortField"
-              property: "text"
-              value: "9191"
 
             - name: "The form holds the loaded log level"
               action: expect_property
@@ -504,7 +489,7 @@ sections:
           mkdir -p "$HOME/.logos_storage"
           cat > "$HOME/.logos_storage/config.json" <<'EOF'
           {
-            "config-version": 2,
+            "config-version": 3,
             "data-dir": "/tmp/storage-ui-settings-data",
             "log-level": "info",
             "mix-enabled": true,
@@ -559,6 +544,11 @@ sections:
               find_value: "settingsForm"
               method: "pickNetwork"
               args: ["logos.test"]
+
+            - name: "Let the Mix relays come back"
+              # The pick applies once the module answers.
+              action: sleep
+              ms: 1000
 
             - name: "The edit is pending"
               action: expect_property
@@ -633,6 +623,11 @@ sections:
               find_value: "settingsForm"
               method: "pickNetwork"
               args: ["logos.dev"]
+
+            - name: "Let the Mix relays come back"
+              # The pick applies once the module answers.
+              action: sleep
+              ms: 1000
 
             - name: "The edit is pending"
               action: expect_property

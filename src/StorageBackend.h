@@ -19,34 +19,11 @@ static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
 static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
 
 static const int DEFAULT_LISTEN_PORT = 8500;
-static const int DEFAULT_DISC_PORT = 9090;
 static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 
 // AutoNAT rounds every two minutes is the node's own default, and a verdict
 // takes several rounds: too slow for a user watching the dashboard.
 static const QString DEFAULT_NAT_SCHEDULE_INTERVAL = "60s";
-
-// Config schema version
-// Increment it and add migrateVXtoVY methods when the config schema changes.
-static const int CURRENT_CONFIG_VERSION = 2;
-
-// Default network preset.
-// Presets are defined in logos storage nim repo.
-static const QString DEFAULT_NETWORK = "logos.test";
-
-// The bootstrap nodes the UI used to write into config.json before the module
-// switched to network presets. Kept only to detect un-migrated user configs.
-static const QStringList LEGACY_BOOTSTRAP_NODES = {
-    "spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-"
-    "EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-"
-    "uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE",
-    "spr:CiUIAhIhApIj9p6zJDRbw2NoCo-"
-    "tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEG"
-    "gsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw",
-    "spr:CiUIAhIhApqRgeWRPSXocTS9RFkQmwTZRG-"
-    "Cdt7UR2N7POoz606ZEgIDARpJCicAJQgCEiECmpGB5ZE9JehxNL1EWRCbBNlEb4J23tRHY3s86jPrTpkQj8_"
-    "8wQYaCwoJBAXfEfiRAnVOGgsKCQQF3xH4kQJ1TipGMEQCIGWJMsF57N1iIEQgTH7IrVOgEgv0J2P2v3jvQr5Cjy-RAiAy4aiZ8QtyDvCfl_K_"
-    "w6SyZ9csFGkRNTpirq_M_QNgKw"};
 
 class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginContext {
     Q_OBJECT
@@ -156,6 +133,11 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
     QString configJson() override;
 
+    // Bring a config up to date with the module that will run it. Used by the
+    // settings form when the user picks a network: the Mix relays of the new
+    // one come back with it.
+    QString migrateConfig(QString configJson) override;
+
   protected:
     // Stop the node before unload. Asynchronous while Running: the host waits
     // for unloadFinished().
@@ -165,27 +147,8 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
 
-    // Run the persisted config.json through migrateConfig() and rewrite.
-    void migrateUserConfigFile();
-
-    // Transform the config json from an old version to the current version.
-    QString migrateConfig(QString configJson);
-
-    // Individual migration steps.
-    static QJsonObject migrateV0toV1(QJsonObject obj);
-    static QJsonObject migrateV1toV2(QJsonObject obj);
-
-    // Mix config for a given network preset, empty when the network is not one
-    // we ship. It is used to fill the dht-mix-proxy and mix-pool-json fields.
-    static QJsonObject mixConfig(const QString& network);
-
-    // Put back the Mix values the network preset comes with. Left alone when
-    // the user runs their own network, i.e. carries their own bootstrap list.
-    static QString syncMixConfig(QString configJson);
-
-    // True when the array matches the bootstrap list the UI used to ship,
-    // i.e. the user never set their own bootstrap nodes.
-    static bool isLegacyBootstrap(const QJsonArray& bootstrap);
+    // Refresh the persisted config.json through the module and rewrite it.
+    void refreshUserConfigFile();
 
     // Display debug (or message) in the terminal and
     // add it to the debugLogs to make it accessible

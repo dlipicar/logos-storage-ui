@@ -5,15 +5,15 @@
 # The storage-ui doc-tests are internal (not published), so this only runs a spec
 # and produces its standalone report — there is no docs site to serve.
 #
-#   ./docs/preview.sh --doctest-migration  # run the config-migration doc-test
+#   ./docs/preview.sh --doctest-config     # run the config-refresh doc-test
 #
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 case "${1:-}" in
-  --doctest-migration) SPEC=storage-ui-migration.test.yaml ;;
+  --doctest-config) SPEC=storage-ui-config.test.yaml ;;
   *)
-    echo "Usage: $0 --doctest-migration" >&2
+    echo "Usage: $0 --doctest-config" >&2
     exit 2
     ;;
 esac
