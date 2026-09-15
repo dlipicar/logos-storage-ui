@@ -11,7 +11,8 @@ intro: |
     1. the legacy `bootstrap-node` list is gone, without a `network` field added
     2. the Mix configuration is filled
     3. the obsolete `nat` value is dropped
-    4. the config is stamped with the current version
+    4. the retired `disc-port` is dropped
+    5. the config is stamped with the current version
 
 what_you_build: "Storage UI started on a config from an older build, refreshed by the module."
 
@@ -88,6 +89,7 @@ sections:
           set -e
           test "$(jq 'has("network")' "$HOME/.logos_storage/config.json")" = "false"
           test "$(jq 'has("bootstrap-node")' "$HOME/.logos_storage/config.json")" = "true"
+          test "$(jq '."disc-port"' "$HOME/.logos_storage/config.json")" = "8090"
           echo "legacy config in place"
 
   - title: "Launch the app and let it refresh"
@@ -131,7 +133,7 @@ sections:
 
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
           test "$(jq 'has("network")' "$cfg")" = "false"
-          test "$(jq '."config-version"' "$cfg")" = "2"
+          test "$(jq '."config-version"' "$cfg")" = "3"
 
           echo "refresh OK: retired bootstrap-node removed, no network preset added, config-version stamped"
 
@@ -154,6 +156,16 @@ sections:
           test "$(jq 'has("nat")' "$cfg")" = "false"
 
           echo "nat OK: obsolete value removed"
+
+      - title: "The retired disc-port was dropped"
+        run: |
+          set -e
+          cfg="$HOME/.logos_storage/config.json"
+
+          # Discovery moved to the libp2p DHT: there is no UDP port left.
+          test "$(jq 'has("disc-port")' "$cfg")" = "false"
+
+          echo "disc-port OK: retired key removed"
 
       - title: "The Mix configuration is present"
         run: |
@@ -224,6 +236,6 @@ sections:
           test "$after" = "$before"
           test "$(jq 'has("network")' "$cfg")" = "false"
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
-          test "$(jq '."config-version"' "$cfg")" = "2"
+          test "$(jq '."config-version"' "$cfg")" = "3"
 
           echo "idempotent OK: config unchanged on restart"

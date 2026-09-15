@@ -139,16 +139,6 @@ void StorageBackend::reportError(const QString& message) {
     emit error(message);
 }
 
-static int seenPeerCount(const QVariantList& nodes) {
-    int count = 0;
-    for (const QVariant& node : nodes) {
-        if (node.toMap().value("seen").toBool()) {
-            ++count;
-        }
-    }
-    return count;
-}
-
 void StorageBackend::debug(const QString& log, const QString& level) {
     QString current = debugLogs();
     if (!current.isEmpty()) {
@@ -498,7 +488,7 @@ void StorageBackend::refreshNodeStatus() {
     setNatReachability(reachability.isEmpty() ? QStringLiteral("Unknown") : reachability);
 
     QVariantList nodes = info.value("table").toMap().value("nodes").toList();
-    const int peers = seenPeerCount(nodes);
+    const int peers = nodes.size();
     emit peersUpdated(peers);
 
     debug(QString("Peers: %1, NAT reachability: %2").arg(peers).arg(natReachability()));
@@ -793,7 +783,6 @@ QJsonDocument StorageBackend::defaultConfig() {
 
     // Define defaults here to make it visible on the UI
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
-    obj["disc-port"] = DEFAULT_DISC_PORT;
     obj["nat-schedule-interval"] = DEFAULT_NAT_SCHEDULE_INTERVAL;
     obj["mix-enabled"] = true;
 

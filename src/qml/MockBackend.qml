@@ -11,7 +11,7 @@ QtObject {
     property string uiVersion: "0.0.0"
     function migrateConfig(configJson) {
         const cfg = JSON.parse(configJson)
-        cfg["config-version"] = 2
+        cfg["config-version"] = 3
         if (!cfg["mix-enabled"])
             return JSON.stringify(cfg)
         cfg["dht-mix-proxy"] = ["spr:mock-" + (cfg["network"] || "logos.test")]
@@ -22,7 +22,6 @@ QtObject {
     property string defaultConfigJson: JSON.stringify({
                                                           "data-dir": "/home/user/.logos_storage/data",
                                                           "listen-port": 8500,
-                                                          "disc-port": 9090,
                                                           "nat-schedule-interval": "60s",
                                                           "mix-enabled": true
                                                       })
@@ -73,8 +72,6 @@ QtObject {
         debugInfoUpdated({
                              "id": "16Uiu2HAmMockPeerIdForTheDesignPreview",
                              "addrs": ["/ip4/127.0.0.1/tcp/8500"],
-                             "providerAddresses": ["/ip4/127.0.0.1/tcp/8500"],
-                             "discoveryAddresses": ["/ip4/127.0.0.1/udp/9090"],
                              "spr": "spr:mock",
                              "nat": {
                                  "reachability": "Reachable",
@@ -88,9 +85,13 @@ QtObject {
                              },
                              "table": {
                                  "nodes": [{
-                                         "seen": true
+                                         "peerId": "16Uiu2HAmMockPeerA",
+                                         "addresses": ["/ip4/127.0.0.1/tcp/8501"],
+                                         "lastSeen": 1789131887
                                      }, {
-                                         "seen": false
+                                         "peerId": "16Uiu2HAmMockPeerB",
+                                         "addresses": ["/ip4/127.0.0.1/tcp/8502"],
+                                         "lastSeen": 1789131800
                                      }]
                              },
                              "connections": [{
@@ -114,11 +115,10 @@ QtObject {
     }
     function getUserConfig() {
         return JSON.stringify({
-                                  "config-version": 2,
+                                  "config-version": 3,
                                   "data-dir": "/home/user/.logos_storage/data",
                                   "log-level": "info",
                                   "listen-port": 8500,
-                                  "disc-port": 9090,
                                   "mix-enabled": true,
                                   "dht-mix-proxy": ["spr:mock"],
                                   "mix-pool-json": "{\"version\":1,\"relays\":[]}"

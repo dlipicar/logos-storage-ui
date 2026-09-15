@@ -19,7 +19,6 @@ static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
 static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
 
 static const int DEFAULT_LISTEN_PORT = 8500;
-static const int DEFAULT_DISC_PORT = 9090;
 static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 
 // AutoNAT rounds every two minutes is the node's own default, and a verdict

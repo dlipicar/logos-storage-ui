@@ -181,9 +181,8 @@ sections:
           echo "config written by onboarding:"
           jq . "$cfg"
 
-          test "$(jq '."config-version"' "$cfg")" = "2"
+          test "$(jq '."config-version"' "$cfg")" = "3"
           test "$(jq '."listen-port"' "$cfg")" = "8500"
-          test "$(jq '."disc-port"' "$cfg")" = "9090"
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "60s"
 
@@ -237,12 +236,6 @@ sections:
               screenshot: "storage-ui-advanced.png"
               text: |
                 The configuration is split into sections, each with a title and a help text.
-
-            - name: "Move the discovery port"
-              action: set_text
-              find_by: "objectName"
-              find_value: "discPortField"
-              value: "9191"
 
             - name: "Shorten the AutoNAT round"
               action: set_text
@@ -392,7 +385,6 @@ sections:
           echo "config written by onboarding:"
           jq . "$cfg"
 
-          test "$(jq '."disc-port"' "$cfg")" = "9191"
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "30s"
 
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"

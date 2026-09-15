@@ -59,7 +59,6 @@ ScrollView {
     // The byte count as read, so an untouched quota is written back unrounded.
     property var loadedQuota: undefined
     property string vListenPort: ""
-    property string vDiscPort: ""
     property string vNatMode: "auto"
     property string vNatExtIp: ""
     property string vNatInterval: ""
@@ -125,7 +124,7 @@ ScrollView {
                                                && root.vBootstrap.trim() !== "[]"
 
     // Keys the node only reads when it starts.
-    readonly property var restartKeys: ["storage-quota", "listen-port", "disc-port", "nat",
+    readonly property var restartKeys: ["storage-quota", "listen-port", "nat",
                                         "network", "bootstrap-node", "dht-mix-proxy",
                                         "mix-pool-json", "nat-schedule-interval"]
 
@@ -178,7 +177,6 @@ ScrollView {
         root.loadedQuota = cfg["storage-quota"]
         root.vQuotaGiB = root.bytesToGiB(cfg["storage-quota"])
         root.vListenPort = cfg["listen-port"] !== undefined ? String(cfg["listen-port"]) : ""
-        root.vDiscPort = cfg["disc-port"] !== undefined ? String(cfg["disc-port"]) : ""
         root.vNetwork = cfg["network"] || ""
         root.vNatInterval = cfg["nat-schedule-interval"] || ""
         root.vBootstrap = root.toJsonText(cfg["bootstrap-node"])
@@ -264,7 +262,6 @@ ScrollView {
         putJson("dht-mix-proxy", root.vMixProxies)
         put("mix-pool-json", root.vMixPool)
         putInt("listen-port", root.vListenPort)
-        putInt("disc-port", root.vDiscPort)
 
         return cfg
     }
@@ -595,22 +592,6 @@ ScrollView {
                             top: 65535
                         }
                         onTextChanged: root.vListenPort = text
-                    }
-                }
-
-                SettingRow {
-                    title: "Discovery port"
-                    description: "UDP port used by the discovery layer."
-
-                    SField {
-                        objectName: "discPortField"
-                        text: root.vDiscPort
-                        placeholderText: "9090"
-                        validator: IntValidator {
-                            bottom: 0
-                            top: 65535
-                        }
-                        onTextChanged: root.vDiscPort = text
                     }
                 }
 
