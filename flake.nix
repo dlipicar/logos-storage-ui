@@ -10,8 +10,7 @@
   inputs = {
     logos-module-builder.url = "github:logos-co/logos-module-builder";
     nix-bundle-lgx.url = "github:logos-co/nix-bundle-lgx";
-    # TODO: back to a tag once refreshConfig is released.
-    storage_module.url = "github:logos-co/logos-storage-module?ref=feat/refresh-config";
+    storage_module.url = "github:logos-co/logos-storage-module";
   };
 
   outputs = inputs@{ logos-module-builder, ... }:

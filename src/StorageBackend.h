@@ -137,7 +137,7 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Bring a config up to date with the module that will run it. Used by the
     // settings form when the user picks a network: the Mix relays of the new
     // one come back with it.
-    QString refreshConfig(QString configJson) override;
+    QString migrateConfig(QString configJson) override;
 
   protected:
     // Stop the node before unload. Asynchronous while Running: the host waits

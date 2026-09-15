@@ -9,7 +9,7 @@ QtObject {
     property bool mixRunning: false
     property string natReachability: "Unknown"
     property string uiVersion: "0.0.0"
-    function refreshConfig(configJson) {
+    function migrateConfig(configJson) {
         const cfg = JSON.parse(configJson)
         cfg["config-version"] = 2
         if (!cfg["mix-enabled"])

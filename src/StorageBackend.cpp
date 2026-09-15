@@ -170,7 +170,7 @@ void StorageBackend::debug(const QString& log, const QString& level) {
 void StorageBackend::init(QString configJson) {
     qDebug() << "StorageBackend::initStorage called";
 
-    configJson = refreshConfig(configJson);
+    configJson = migrateConfig(configJson);
 
     m_config = QJsonDocument::fromJson(configJson.toUtf8());
     if (!m_config.isObject()) {
@@ -800,8 +800,8 @@ QJsonDocument StorageBackend::defaultConfig() {
     return QJsonDocument(obj);
 }
 
-QString StorageBackend::refreshConfig(QString configJsonStr) {
-    const LogosResult result = m_logos->storage_module.refreshConfig(configJsonStr);
+QString StorageBackend::migrateConfig(QString configJsonStr) {
+    const LogosResult result = m_logos->storage_module.migrateConfig(configJsonStr);
 
     if (!result.success) {
         reportError("Failed to refresh the config: " + result.getError());
@@ -820,7 +820,7 @@ void StorageBackend::refreshUserConfigFile() {
     file.close();
 
     const QJsonDocument refreshed =
-        QJsonDocument::fromJson(refreshConfig(QString::fromUtf8(current)).toUtf8());
+        QJsonDocument::fromJson(migrateConfig(QString::fromUtf8(current)).toUtf8());
 
     // Compare parsed: the module returns compact json, the file is indented.
     if (refreshed.isNull() || refreshed == QJsonDocument::fromJson(current)) {

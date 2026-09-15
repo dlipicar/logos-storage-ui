@@ -282,12 +282,12 @@ ScrollView {
                                        })
 
         if (root.backend.isMock) {
-            root.applyMix(root.backend.refreshConfig(request))
+            root.applyMix(root.backend.migrateConfig(request))
         } else if (typeof logos !== "undefined" && logos) {
-            logos.watch(root.backend.refreshConfig(request), function (text) {
+            logos.watch(root.backend.migrateConfig(request), function (text) {
                 root.applyMix(text)
             }, function (err) {
-                console.warn("refreshConfig:", err)
+                console.warn("migrateConfig:", err)
             })
         }
     }
