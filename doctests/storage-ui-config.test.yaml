@@ -157,7 +157,7 @@ sections:
 
           echo "nat OK: obsolete value removed"
 
-      - title: "The retired disc-port was dropped"
+      - title: "The disc-port was dropped"
         run: |
           set -e
           cfg="$HOME/.logos_storage/config.json"
