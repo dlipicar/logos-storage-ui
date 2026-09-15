@@ -9,6 +9,7 @@ QtObject {
     property bool mixRunning: false
     property string natReachability: "Unknown"
     property string uiVersion: "0.0.0"
+    property string moduleVersion: "0.0.0"
     function migrateConfig(configJson) {
         const cfg = JSON.parse(configJson)
         cfg["config-version"] = 3

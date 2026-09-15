@@ -41,6 +41,7 @@ StorageBackend::StorageBackend(QObject* parent)
 void StorageBackend::onContextReady() {
     // ~StorageBackend still calls storage_module after modules() is destroyed.
     m_logos = new LogosModules(modules().api);
+    setModuleVersion(m_logos->storage_module.moduleVersion());
 }
 
 LogosShutdown StorageBackend::aboutToUnload()

@@ -121,7 +121,7 @@ Popup {
         root.addRow("Routing table", nodes.length + " known")
         root.addRow("Connections",
                     connections.length + " open / " + root.countBy(connections, "direct") + " direct")
-        root.addRow("Storage version", "2.1.3")
+        root.addRow("Storage version", root.backend.moduleVersion)
 
         root.addAll("Listen address", info.addrs)
 

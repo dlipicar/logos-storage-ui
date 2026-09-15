@@ -15,6 +15,7 @@ class StorageBackend
     PROP(StorageStatus status READONLY)
     PROP(QString defaultConfigJson READONLY)
     PROP(QString uiVersion READONLY)
+    PROP(QString moduleVersion READONLY)
 
     // AutoNAT reachability reported by the node: "Reachable", "NotReachable"
     // or "Unknown" while AutoNAT has no verdict yet.

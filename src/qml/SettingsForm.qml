@@ -267,10 +267,10 @@ ScrollView {
     }
 
     function pickNetwork(network) {
-        root.vNetwork = network
-
-        if (!root.backend)
+        if (!root.backend) {
+            root.vNetwork = network
             return
+        }
 
         const request = JSON.stringify({
                                            "network": network,
@@ -279,9 +279,11 @@ ScrollView {
                                        })
 
         if (root.backend.isMock) {
+            root.vNetwork = network
             root.applyMix(root.backend.migrateConfig(request))
         } else if (typeof logos !== "undefined" && logos) {
             logos.watch(root.backend.migrateConfig(request), function (text) {
+                root.vNetwork = network
                 root.applyMix(text)
             }, function (err) {
                 console.warn("migrateConfig:", err)

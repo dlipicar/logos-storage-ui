@@ -545,6 +545,11 @@ sections:
               method: "pickNetwork"
               args: ["logos.test"]
 
+            - name: "Let the Mix relays come back"
+              # The pick applies once the module answers.
+              action: sleep
+              ms: 1000
+
             - name: "The edit is pending"
               action: expect_property
               find_value: "unsavedNotice"
@@ -618,6 +623,11 @@ sections:
               find_value: "settingsForm"
               method: "pickNetwork"
               args: ["logos.dev"]
+
+            - name: "Let the Mix relays come back"
+              # The pick applies once the module answers.
+              action: sleep
+              ms: 1000
 
             - name: "The edit is pending"
               action: expect_property
